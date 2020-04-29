@@ -129,3 +129,59 @@ ENGINE = InnoDB;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+--FUNCTION--
+-- Function: insertcuenta(numeric, character varying, character varying)
+
+-- DROP FUNCTION insertcuenta(numeric, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION insertcuenta(
+    p_rolcuenta numeric,
+    p_usuario character varying,
+    p_contrasena character varying)
+  RETURNS character varying AS
+$BODY$
+  DECLARE 
+  
+    info character varying(1000);
+    msg character varying(50);
+
+    _user character varying(15);
+    _clav character varying(30);
+    respuesta record;
+    
+   BEGIN
+
+  select into _user usuario from cuentas  where usuario =p_usuario;
+  select into _clav contrasena from cuentas where contrasena =p_contrasena and usuario =p_usuario;
+
+  IF  _user = p_usuario THEN
+
+     info='USUARIO YA EXISTE';
+  
+    RETURN info;
+   
+   else 
+   
+    INSERT INTO cuentas (usuario,contrasena,rol_cuenta) VALUES (p_usuario,p_contrasena,p_rolcuenta);
+
+     info='USUARIO CREADO';
+
+     for respuesta in   select * from cuentas where usuario=p_usuario and contrasena= p_contrasena loop
+         info= 'USUARIO CREADO' ||','||respuesta.id_cuenta||','||respuesta.rol_cuenta;
+     end loop;
+    RETURN info;
+END IF; 
+     EXCEPTION   
+    WHEN OTHERS THEN
+   info= 'SE OBTUVO UN ERROR INESPERADO'||SQLERRM;
+    RAISE NOTICE  '%%%', SQLSTATE || ' - ' || SQLERRM;-- || para concatenar
+    RETURN info ;
+    
+END;
+
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION insertcuenta(numeric, character varying, character varying)
+  OWNER TO postgres;
